@@ -1,4 +1,4 @@
-const { app, BrowserWindow, globalShortcut, ipcMain, clipboard } = require('electron');
+const { app, BrowserWindow, globalShortcut, ipcMain, clipboard, shell } = require('electron');
 const path = require('path');
 const ClipboardService = require('./services/ClipboardService');
 const NotesService = require('./services/NotesService');
@@ -8,10 +8,19 @@ const AIService = require('./services/AIService');
 const WindowManagerService = require('./services/WindowManagerService');
 const FileSearchService = require('./services/FileSearchService');
 const EmojiService = require('./services/EmojiService');
+const SystemCommandService = require('./services/SystemCommandService');
+const ScriptService = require('./services/ScriptService');
+const SnippetsService = require('./services/SnippetsService');
+const QuicklinksService = require('./services/QuicklinksService');
+const HistoryService = require('./services/HistoryService');
 
 let mainWindow;
 let clipboardService;
 let notesService;
+let scriptService;
+let snippetsService;
+let quicklinksService;
+let historyService;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -47,6 +56,10 @@ app.whenReady().then(() => {
   // Initialize services
   clipboardService = new ClipboardService();
   notesService = new NotesService();
+  scriptService = new ScriptService();
+  snippetsService = new SnippetsService();
+  quicklinksService = new QuicklinksService();
+  historyService = new HistoryService();
 
   // Register global shortcut (Ctrl+Space or Cmd+Space)
   const ret = globalShortcut.register('CommandOrControl+Space', () => {
@@ -239,6 +252,128 @@ ipcMain.handle('get-all-emojis', () => {
 
 ipcMain.handle('get-emoji-categories', () => {
   return EmojiService.getCategories();
+});
+
+// System Command handlers
+ipcMain.handle('get-system-commands', async () => {
+  return SystemCommandService.getAvailableCommands();
+});
+
+ipcMain.handle('execute-system-command', async (event, command, value) => {
+  return await SystemCommandService.executeByName(command, value);
+});
+
+ipcMain.handle('set-volume', async (event, level) => {
+  return await SystemCommandService.setVolume(level);
+});
+
+ipcMain.handle('set-brightness', async (event, level) => {
+  return await SystemCommandService.setBrightness(level);
+});
+
+// Script handlers
+ipcMain.handle('get-scripts', async () => {
+  return await scriptService.getScripts();
+});
+
+ipcMain.handle('create-script', async (event, name, content, type) => {
+  return await scriptService.createScript(name, content, type);
+});
+
+ipcMain.handle('read-script', async (event, filename) => {
+  return await scriptService.readScript(filename);
+});
+
+ipcMain.handle('update-script', async (event, filename, content) => {
+  return await scriptService.updateScript(filename, content);
+});
+
+ipcMain.handle('delete-script', async (event, filename) => {
+  return await scriptService.deleteScript(filename);
+});
+
+ipcMain.handle('execute-script', async (event, filename, args) => {
+  return await scriptService.executeScript(filename, args);
+});
+
+ipcMain.handle('run-command', async (event, command) => {
+  return await scriptService.runCommand(command);
+});
+
+ipcMain.handle('get-script-templates', () => {
+  return scriptService.getTemplates();
+});
+
+// Snippets handlers
+ipcMain.handle('get-snippets', async (event, query) => {
+  return await snippetsService.getSnippets(query);
+});
+
+ipcMain.handle('create-snippet', async (event, shortcut, title, content, category) => {
+  return await snippetsService.createSnippet(shortcut, title, content, category);
+});
+
+ipcMain.handle('update-snippet', async (event, id, updates) => {
+  return await snippetsService.updateSnippet(id, updates);
+});
+
+ipcMain.handle('delete-snippet', async (event, id) => {
+  return await snippetsService.deleteSnippet(id);
+});
+
+ipcMain.handle('get-snippet-categories', async () => {
+  return await snippetsService.getCategories();
+});
+
+// Quicklinks handlers
+ipcMain.handle('get-quicklinks', async (event, query) => {
+  return await quicklinksService.getQuicklinks(query);
+});
+
+ipcMain.handle('create-quicklink', async (event, title, url, icon, category) => {
+  return await quicklinksService.createQuicklink(title, url, icon, category);
+});
+
+ipcMain.handle('update-quicklink', async (event, id, updates) => {
+  return await quicklinksService.updateQuicklink(id, updates);
+});
+
+ipcMain.handle('delete-quicklink', async (event, id) => {
+  return await quicklinksService.deleteQuicklink(id);
+});
+
+ipcMain.handle('get-quicklink-categories', async () => {
+  return await quicklinksService.getCategories();
+});
+
+ipcMain.handle('open-quicklink', async (event, url) => {
+  shell.openExternal(url);
+  return { success: true };
+});
+
+// History handlers
+ipcMain.handle('add-history-item', async (event, type, item) => {
+  return await historyService.addItem(type, item);
+});
+
+ipcMain.handle('get-recent-history', async (event, type, limit) => {
+  return await historyService.getRecent(type, limit);
+});
+
+ipcMain.handle('get-frequent-history', async (event, type, limit) => {
+  return await historyService.getFrequent(type, limit);
+});
+
+ipcMain.handle('search-history', async (event, type, query) => {
+  return await historyService.search(type, query);
+});
+
+ipcMain.handle('clear-history', async (event, type) => {
+  return await historyService.clear(type);
+});
+
+ipcMain.handle('get-history-stats', async () => {
+  return await historyService.getStats();
 });
 
 // Window control

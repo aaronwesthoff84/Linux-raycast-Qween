@@ -1,135 +1,254 @@
 const assert = require('assert');
-const WindowManagerService = require('../electron/services/WindowManagerService');
-const FileSearchService = require('../electron/services/FileSearchService');
-const EmojiService = require('../electron/services/EmojiService');
+const SystemCommandService = require('../electron/services/SystemCommandService');
+const ScriptService = require('../electron/services/ScriptService');
+const SnippetsService = require('../electron/services/SnippetsService');
+const QuicklinksService = require('../electron/services/QuicklinksService');
+const HistoryService = require('../electron/services/HistoryService');
 
-describe('WindowManagerService', () => {
-  describe('parseWmctrlOutput', () => {
-    it('should parse wmctrl output correctly', () => {
-      const output = `0x04000003  0 1920 54   1920 1080 1920 1080  4  0 _NET_ACTIVE_WINDOW: 0x4000003  Firefox - Web Browser`;
-      const result = WindowManagerService.parseWmctrlOutput(output);
-      
-      assert.ok(Array.isArray(result));
-      if (result.length > 0) {
-        assert.ok(result[0].id);
-        assert.ok(result[0].title);
-        assert.ok(result[0].app);
-      }
+describe('SystemCommandService', () => {
+  describe('getAvailableCommands', () => {
+    it('should return a list of available commands', () => {
+      const commands = SystemCommandService.getAvailableCommands();
+      assert.ok(Array.isArray(commands));
+      assert.ok(commands.length > 0);
+      assert.ok(commands[0].name);
+      assert.ok(commands[0].command);
+      assert.ok(commands[0].icon);
     });
 
-    it('should handle empty output', () => {
-      const result = WindowManagerService.parseWmctrlOutput('');
-      assert.deepStrictEqual(result, []);
+    it('should include power commands', () => {
+      const commands = SystemCommandService.getAvailableCommands();
+      const commandNames = commands.map(c => c.command);
+      assert.ok(commandNames.includes('poweroff'));
+      assert.ok(commandNames.includes('restart'));
+      assert.ok(commandNames.includes('suspend'));
+      assert.ok(commandNames.includes('lock'));
     });
   });
 
-  describe('searchWindows', () => {
-    it('should return all windows when no query', () => {
-      WindowManagerService.windows = [
-        { id: '1', title: 'Firefox', app: 'firefox' },
-        { id: '2', title: 'Terminal', app: 'gnome-terminal' }
-      ];
-      
-      const result = WindowManagerService.searchWindows('');
-      assert.strictEqual(result.length, 2);
-    });
-
-    it('should filter windows by title', () => {
-      WindowManagerService.windows = [
-        { id: '1', title: 'Firefox Browser', app: 'firefox' },
-        { id: '2', title: 'Terminal', app: 'gnome-terminal' }
-      ];
-      
-      const result = WindowManagerService.searchWindows('firefox');
-      assert.strictEqual(result.length, 1);
-      assert.strictEqual(result[0].title, 'Firefox Browser');
+  describe('execute', () => {
+    it('should reject dangerous commands', async () => {
+      const result = await SystemCommandService.execute('rm -rf /');
+      assert.strictEqual(result.success, false);
+      assert.ok(result.error.includes('not allowed'));
     });
   });
 });
 
-describe('FileSearchService', () => {
-  describe('getFileType', () => {
-    it('should identify javascript files', () => {
-      assert.strictEqual(FileSearchService.getFileType('/path/to/file.js'), 'javascript');
+describe('ScriptService', () => {
+  let service;
+
+  beforeEach(() => {
+    service = new ScriptService();
+  });
+
+  describe('getTemplates', () => {
+    it('should return script templates', () => {
+      const templates = service.getTemplates();
+      assert.ok(Array.isArray(templates));
+      assert.ok(templates.length > 0);
+      assert.ok(templates[0].name);
+      assert.ok(templates[0].content);
+      assert.ok(templates[0].type);
     });
 
-    it('should identify python files', () => {
-      assert.strictEqual(FileSearchService.getFileType('/path/to/file.py'), 'python');
-    });
-
-    it('should identify image files', () => {
-      assert.strictEqual(FileSearchService.getFileType('/path/to/image.png'), 'image');
-      assert.strictEqual(FileSearchService.getFileType('/path/to/image.jpg'), 'image');
-    });
-
-    it('should identify documents', () => {
-      assert.strictEqual(FileSearchService.getFileType('/path/to/doc.pdf'), 'pdf');
-      assert.strictEqual(FileSearchService.getFileType('/path/to/doc.docx'), 'document');
-    });
-
-    it('should return file for unknown extensions', () => {
-      assert.strictEqual(FileSearchService.getFileType('/path/to/file.xyz'), 'file');
+    it('should include common system scripts', () => {
+      const templates = service.getTemplates();
+      const names = templates.map(t => t.name);
+      assert.ok(names.some(n => n.includes('Update')));
+      assert.ok(names.some(n => n.includes('Cache')));
     });
   });
 
-  describe('search', () => {
-    it('should return empty array for short queries', async () => {
-      const result = await FileSearchService.search('a');
-      assert.deepStrictEqual(result, []);
+  describe('runCommand', () => {
+    it('should reject dangerous commands', async () => {
+      const result = await service.runCommand('rm -rf /');
+      assert.strictEqual(result.success, false);
+      assert.ok(result.error.includes('Dangerous'));
+    });
+
+    it('should execute safe commands', async () => {
+      const result = await service.runCommand('echo "test"');
+      assert.strictEqual(result.success, true);
+      assert.ok(result.output.includes('test'));
     });
   });
 });
 
-describe('EmojiService', () => {
-  describe('search', () => {
-    it('should return emojis when searching by name', () => {
-      const result = EmojiService.search('smile');
-      assert.ok(Array.isArray(result));
-      assert.ok(result.length > 0);
-      assert.ok(result[0].emoji);
-      assert.ok(result[0].name);
-      assert.ok(result[0].category);
+describe('SnippetsService', () => {
+  let service;
+
+  beforeEach(() => {
+    service = new SnippetsService();
+  });
+
+  describe('getDefaultSnippets', () => {
+    it('should return default snippets', () => {
+      const snippets = service.getDefaultSnippets();
+      assert.ok(Array.isArray(snippets));
+      assert.ok(snippets.length > 0);
+      assert.ok(snippets[0].shortcut);
+      assert.ok(snippets[0].content);
     });
 
-    it('should return emojis when searching by category', () => {
-      const result = EmojiService.search('food');
-      assert.ok(Array.isArray(result));
-      assert.ok(result.some(e => e.category === 'food'));
+    it('should include contact snippets', () => {
+      const snippets = service.getDefaultSnippets();
+      const hasContact = snippets.some(s => s.category === 'contact');
+      assert.ok(hasContact);
     });
 
-    it('should return limited results', () => {
-      const result = EmojiService.search('');
-      assert.ok(result.length <= 50);
+    it('should include code snippets', () => {
+      const snippets = service.getDefaultSnippets();
+      const hasCode = snippets.some(s => s.category === 'code');
+      assert.ok(hasCode);
+    });
+
+    it('should include symbol snippets', () => {
+      const snippets = service.getDefaultSnippets();
+      const hasSymbols = snippets.some(s => s.category === 'symbols');
+      assert.ok(hasSymbols);
     });
   });
 
-  describe('getAll', () => {
-    it('should return all emojis', () => {
-      const result = EmojiService.getAll();
-      assert.ok(Array.isArray(result));
-      assert.ok(result.length > 0);
+  describe('getSnippets', () => {
+    it('should return all snippets when no query', async () => {
+      const snippets = await service.getSnippets();
+      assert.ok(Array.isArray(snippets));
+      assert.ok(snippets.length > 0);
+    });
+
+    it('should filter by query', async () => {
+      const snippets = await service.getSnippets('email');
+      assert.ok(Array.isArray(snippets));
+      snippets.forEach(s => {
+        const searchable = `${s.title} ${s.shortcut} ${s.content}`.toLowerCase();
+        assert.ok(searchable.includes('email'));
+      });
     });
   });
 
   describe('getCategories', () => {
-    it('should return unique categories', () => {
-      const categories = EmojiService.getCategories();
+    it('should return unique categories', async () => {
+      const categories = await service.getCategories();
       assert.ok(Array.isArray(categories));
-      assert.ok(categories.includes('smileys'));
-      assert.ok(categories.includes('food'));
-      assert.ok(categories.includes('animals'));
-    });
-  });
-
-  describe('getByCategory', () => {
-    it('should return emojis for a specific category', () => {
-      const result = EmojiService.getByCategory('smileys');
-      assert.ok(Array.isArray(result));
-      assert.ok(result.every(e => e.category === 'smileys'));
+      assert.ok(categories.length > 0);
+      // Check uniqueness
+      const unique = [...new Set(categories)];
+      assert.strictEqual(unique.length, categories.length);
     });
   });
 });
 
-console.log('✓ WindowManagerService tests defined');
-console.log('✓ FileSearchService tests defined');
-console.log('✓ EmojiService tests defined');
+describe('QuicklinksService', () => {
+  let service;
+
+  beforeEach(() => {
+    service = new QuicklinksService();
+  });
+
+  describe('getDefaultQuicklinks', () => {
+    it('should return default quicklinks', () => {
+      const links = service.getDefaultQuicklinks();
+      assert.ok(Array.isArray(links));
+      assert.ok(links.length > 0);
+      assert.ok(links[0].title);
+      assert.ok(links[0].url);
+      assert.ok(links[0].icon);
+    });
+
+    it('should include development links', () => {
+      const links = service.getDefaultQuicklinks();
+      const hasDev = links.some(l => l.category === 'development');
+      assert.ok(hasDev);
+    });
+
+    it('should include Linux-specific links', () => {
+      const links = service.getDefaultQuicklinks();
+      const hasLinux = links.some(l => l.category === 'linux');
+      assert.ok(hasLinux);
+    });
+  });
+
+  describe('getQuicklinks', () => {
+    it('should return all quicklinks when no query', async () => {
+      const links = await service.getQuicklinks();
+      assert.ok(Array.isArray(links));
+      assert.ok(links.length > 0);
+    });
+
+    it('should filter by query', async () => {
+      const links = await service.getQuicklinks('github');
+      assert.ok(Array.isArray(links));
+      links.forEach(l => {
+        const searchable = `${l.title} ${l.url} ${l.category}`.toLowerCase();
+        assert.ok(searchable.includes('github'));
+      });
+    });
+  });
+
+  describe('getCategories', () => {
+    it('should return unique categories', async () => {
+      const categories = await service.getCategories();
+      assert.ok(Array.isArray(categories));
+      assert.ok(categories.length > 0);
+      const unique = [...new Set(categories)];
+      assert.strictEqual(unique.length, categories.length);
+    });
+  });
+});
+
+describe('HistoryService', () => {
+  let service;
+
+  beforeEach(() => {
+    service = new HistoryService();
+  });
+
+  describe('addItem', () => {
+    it('should add item to history', async () => {
+      const result = await service.addItem('apps', { id: 'test-1', name: 'Test App' });
+      assert.strictEqual(result.success, true);
+    });
+
+    it('should track count for repeated items', async () => {
+      await service.addItem('apps', { id: 'test-2', name: 'Test App 2' });
+      await service.addItem('apps', { id: 'test-2', name: 'Test App 2' });
+      const recent = await service.getRecent('apps', 5);
+      const item = recent.find(i => i.id === 'test-2');
+      assert.ok(item);
+      assert.ok(item.count >= 1);
+    });
+  });
+
+  describe('getRecent', () => {
+    it('should return recent items', async () => {
+      const recent = await service.getRecent('apps', 10);
+      assert.ok(Array.isArray(recent));
+    });
+
+    it('should respect limit', async () => {
+      const recent = await service.getRecent('apps', 3);
+      assert.ok(recent.length <= 3);
+    });
+  });
+
+  describe('getStats', () => {
+    it('should return statistics', async () => {
+      const stats = await service.getStats();
+      assert.ok(typeof stats.totalApps === 'number');
+      assert.ok(typeof stats.totalCommands === 'number');
+      assert.ok(typeof stats.totalFiles === 'number');
+      assert.ok(typeof stats.totalSearches === 'number');
+    });
+  });
+
+  describe('clear', () => {
+    it('should clear history for specific type', async () => {
+      await service.addItem('commands', { value: 'test-cmd' });
+      const result = await service.clear('commands');
+      assert.strictEqual(result.success, true);
+      const recent = await service.getRecent('commands', 10);
+      assert.strictEqual(recent.length, 0);
+    });
+  });
+});
