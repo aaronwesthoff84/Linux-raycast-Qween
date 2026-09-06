@@ -31,13 +31,14 @@ const NotesService = require('../electron/services/NotesService');
 describe('NotesService', () => {
   let notesService;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Clean up test data
     const dbPath = path.join(testDir, 'notes.json');
     if (fs.existsSync(dbPath)) {
       fs.unlinkSync(dbPath);
     }
     notesService = new NotesService();
+    await notesService.initPromise;
   });
 
   describe('createNote', () => {
@@ -56,18 +57,18 @@ describe('NotesService', () => {
       await notesService.createNote('Note 1', 'Content 1');
       await notesService.createNote('Note 2', 'Content 2');
       // Reload to get fresh data from disk
-      notesService.loadNotes();
+      await notesService.loadNotes();
       
-      const allNotes = notesService.getNotes('');
+      const allNotes = await notesService.getNotes('');
       assert.strictEqual(allNotes.length, 2);
     });
 
     it('should filter notes by title', async () => {
       await notesService.createNote('Important Note', 'Some content');
       await notesService.createNote('Other Note', 'Different content');
-      notesService.loadNotes();
+      await notesService.loadNotes();
       
-      const filtered = notesService.getNotes('important');
+      const filtered = await notesService.getNotes('important');
       assert.strictEqual(filtered.length, 1);
       assert.strictEqual(filtered[0].title, 'Important Note');
     });
@@ -76,9 +77,9 @@ describe('NotesService', () => {
       await notesService.createNote('Note A', 'Contains secret');
       await notesService.createNote('Note B', 'Regular content');
       // Reload to get fresh data from disk
-      notesService.loadNotes();
+      await notesService.loadNotes();
       
-      const filtered = notesService.getNotes('secret');
+      const filtered = await notesService.getNotes('secret');
       assert.strictEqual(filtered.length, 1);
     });
   });
@@ -108,14 +109,14 @@ describe('NotesService', () => {
     it('should delete an existing note', async () => {
       const note = await notesService.createNote('To Delete', 'Content');
       // Reload to ensure we have fresh data
-      notesService.loadNotes();
+      await notesService.loadNotes();
       const deleted = await notesService.deleteNote(note.id);
       
       assert.strictEqual(deleted, true);
       
       // Reload notes after deletion
-      notesService.loadNotes();
-      const remaining = notesService.getNotes('');
+      await notesService.loadNotes();
+      const remaining = await notesService.getNotes('');
       assert.strictEqual(remaining.length, 0);
     });
 

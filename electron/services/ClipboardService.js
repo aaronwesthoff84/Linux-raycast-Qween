@@ -1,4 +1,4 @@
-const { app, ipcMain } = require('electron');
+const { app } = require('electron');
 const path = require('path');
 const fs = require('fs').promises;
 
@@ -7,7 +7,7 @@ class ClipboardService {
     this.history = [];
     this.maxHistory = 50;
     this.dbPath = path.join(app.getPath('userData'), 'clipboard.json');
-    this.loadHistory();
+    this.initPromise = this.loadHistory();
   }
 
   async loadHistory() {
@@ -17,6 +17,7 @@ class ClipboardService {
     } catch (e) {
       this.history = [];
     }
+    return this.history;
   }
 
   async saveHistory() {
@@ -28,6 +29,7 @@ class ClipboardService {
   }
 
   async addItem(item) {
+    await this.initPromise;
     // Avoid duplicates
     const exists = this.history.some(h => h.content === item.content);
     if (!exists) {
@@ -44,16 +46,19 @@ class ClipboardService {
     return this.history;
   }
 
-  getHistory(limit = 20) {
+  async getHistory(limit = 20) {
+    await this.initPromise;
     return this.history.slice(0, limit);
   }
 
   async clearHistory() {
+    await this.initPromise;
     this.history = [];
     await this.saveHistory();
   }
 
   async deleteItem(index) {
+    await this.initPromise;
     this.history.splice(index, 1);
     await this.saveHistory();
     return this.history;
