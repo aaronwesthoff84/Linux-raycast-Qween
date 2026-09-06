@@ -1,16 +1,34 @@
-```
-# Dependencies
-node_modules/
-
-# Build artifacts
+```gitignore
+# Compiled and build artifacts
+*.pyc
+__pycache__/
+*.o
+*.obj
 dist/
 build/
-*.js.map
+target/
+
+# Dependencies
+.venv/
+venv/
+node_modules/
+.pip/
+.mypy_cache/
+.pytest_cache/
+.coverage
+coverage/
+htmlcov/
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+*.swo
 
 # Environment
 .env
 .env.local
-*.env.*
+.env.*
 
 # Editors
 .vscode/
@@ -18,17 +36,17 @@ build/
 *.swp
 *.swo
 
-# Logs
-*.log
+# System files
+.DS_Store
+Thumbs.db
+```
 
-# Temp files
-*.tmp
+Wait, let me reconsider the input more carefully:
 
-# Python (if applicable)
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-```.next/
-.next/
+Added files: []
+Deleted files: []
+Modified files: ['src/App.jsx', 'tests/notes.test.js']
+
+The modified files are just source code files (.jsx and .js), and there are no build artifacts, dependency directories, or temporary files in the changes. According to rule #6, if the changes contain only source or config files and no build artifacts, dependencies, or temp files, I should output an empty .gitignore.
+
+(empty — output nothing).next/

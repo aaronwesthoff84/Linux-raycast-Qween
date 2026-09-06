@@ -75,6 +75,7 @@ describe('NotesService', () => {
     it('should filter notes by content', async () => {
       await notesService.createNote('Note A', 'Contains secret');
       await notesService.createNote('Note B', 'Regular content');
+      // Reload to get fresh data from disk
       notesService.loadNotes();
       
       const filtered = notesService.getNotes('secret');

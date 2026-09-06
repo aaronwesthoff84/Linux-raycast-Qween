@@ -4,7 +4,7 @@ import './styles/App.css';
 
 const App = () => {
   const [query, setQuery] = useState('');
-  const [mode, setMode] = useState('apps'); // apps, clipboard, notes, calculator, ai, web
+  const [mode, setMode] = useState('apps'); // apps, clipboard, notes, calculator, ai, web, windows, files, emoji, system, scripts, snippets, links
   const [results, setResults] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [apps, setApps] = useState([]);
@@ -12,16 +12,29 @@ const App = () => {
   const [notes, setNotes] = useState([]);
   const [calcResult, setCalcResult] = useState(null);
   const [aiResponse, setAiResponse] = useState(null);
+  const [windows, setWindows] = useState([]);
+  const [files, setFiles] = useState([]);
+  const [emojis, setEmojis] = useState([]);
+  const [systemCommands, setSystemCommands] = useState([]);
+  const [scripts, setScripts] = useState([]);
+  const [snippets, setSnippets] = useState([]);
+  const [quicklinks, setQuicklinks] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showNoteEditor, setShowNoteEditor] = useState(false);
   const [currentNote, setCurrentNote] = useState(null);
   const inputRef = useRef(null);
 
-  // Load apps on mount
+  // Load data on mount
   useEffect(() => {
     loadApps();
     loadClipboardHistory();
     loadNotes();
+    loadWindows();
+    loadEmojis();
+    loadSystemCommands();
+    loadScripts();
+    loadSnippets();
+    loadQuicklinks();
     
     if (window.electronAPI) {
       window.electronAPI.onShowWindow(() => {
@@ -46,6 +59,27 @@ const App = () => {
     } else if (q.startsWith('/web ') || q.startsWith('/search ')) {
       setMode('web');
       handleWebSearch(q.replace(/^\/(web|search)\s*/, ''));
+    } else if (q.startsWith('/win') || q.startsWith('/windows')) {
+      setMode('windows');
+      handleWindowsSearch(q.replace(/^\/(win|windows)\s*/, ''));
+    } else if (q.startsWith('/file') || q.startsWith('/files')) {
+      setMode('files');
+      handleFileSearch(q.replace(/^\/(file|files)\s*/, ''));
+    } else if (q.startsWith('/emoji') || q.startsWith('/emojis')) {
+      setMode('emoji');
+      handleEmojiSearch(q.replace(/^\/(emoji|emojis)\s*/, ''));
+    } else if (q.startsWith('/sys') || q.startsWith('/system')) {
+      setMode('system');
+      handleSystemCommands(q.replace(/^\/(sys|system)\s*/, ''));
+    } else if (q.startsWith('/script') || q.startsWith('/scripts')) {
+      setMode('scripts');
+      handleScriptsSearch(q.replace(/^\/(script|scripts)\s*/, ''));
+    } else if (q.startsWith('/snippet') || q.startsWith('/snippets')) {
+      setMode('snippets');
+      handleSnippetsSearch(q.replace(/^\/(snippet|snippets)\s*/, ''));
+    } else if (q.startsWith('/link') || q.startsWith('/links') || q.startsWith('/quicklink')) {
+      setMode('links');
+      handleQuicklinksSearch(q.replace(/^\/(link|links|quicklink)\s*/, ''));
     } else if (/^[0-9+\-*/().\s]+$/.test(q) && /[+\-*/]/.test(q)) {
       setMode('calculator');
       handleCalculator(q);
@@ -88,6 +122,48 @@ const App = () => {
     if (window.electronAPI) {
       const loadedNotes = await window.electronAPI.getNotes('');
       setNotes(loadedNotes);
+    }
+  };
+
+  const loadWindows = async () => {
+    if (window.electronAPI) {
+      const loadedWindows = await window.electronAPI.getWindows('');
+      setWindows(loadedWindows);
+    }
+  };
+
+  const loadEmojis = async () => {
+    if (window.electronAPI) {
+      const loadedEmojis = await window.electronAPI.getAllEmojis();
+      setEmojis(loadedEmojis);
+    }
+  };
+
+  const loadSystemCommands = async () => {
+    if (window.electronAPI) {
+      const commands = await window.electronAPI.getSystemCommands();
+      setSystemCommands(commands);
+    }
+  };
+
+  const loadScripts = async () => {
+    if (window.electronAPI) {
+      const loadedScripts = await window.electronAPI.getScripts();
+      setScripts(loadedScripts);
+    }
+  };
+
+  const loadSnippets = async () => {
+    if (window.electronAPI) {
+      const loadedSnippets = await window.electronAPI.getSnippets('');
+      setSnippets(loadedSnippets);
+    }
+  };
+
+  const loadQuicklinks = async () => {
+    if (window.electronAPI) {
+      const loadedLinks = await window.electronAPI.getQuicklinks('');
+      setQuicklinks(loadedLinks);
     }
   };
 
@@ -154,6 +230,81 @@ const App = () => {
       ]);
     }
     setIsLoading(false);
+  };
+
+  const handleWindowsSearch = async (q) => {
+    if (window.electronAPI) {
+      const foundWindows = q ? await window.electronAPI.getWindows(q) : windows;
+      setResults(foundWindows.map(w => ({ type: 'window', ...w })));
+    }
+  };
+
+  const handleFileSearch = async (q) => {
+    if (!q.trim()) {
+      const recent = await window.electronAPI.getRecentFiles(20);
+      setResults(recent.map(f => ({ type: 'file', ...f })));
+      return;
+    }
+    if (window.electronAPI) {
+      const foundFiles = await window.electronAPI.searchFiles(q, { limit: 20 });
+      setResults(foundFiles.map(f => ({ type: 'file', ...f })));
+    }
+  };
+
+  const handleEmojiSearch = async (q) => {
+    if (!q.trim()) {
+      setResults(emojis.slice(0, 50));
+      return;
+    }
+    if (window.electronAPI) {
+      const foundEmojis = await window.electronAPI.searchEmojis(q);
+      setResults(foundEmojis.map(e => ({ type: 'emoji', ...e })));
+    }
+  };
+
+  const handleSystemCommands = async (q) => {
+    if (!q.trim()) {
+      setResults(systemCommands.map(c => ({ type: 'system_command', ...c })));
+      return;
+    }
+    const filtered = systemCommands.filter(c => 
+      c.name.toLowerCase().includes(q.toLowerCase()) ||
+      c.command.toLowerCase().includes(q.toLowerCase())
+    );
+    setResults(filtered.map(c => ({ type: 'system_command', ...c })));
+  };
+
+  const handleScriptsSearch = async (q) => {
+    if (!q.trim()) {
+      setResults(scripts.map(s => ({ type: 'script', ...s })));
+      return;
+    }
+    const filtered = scripts.filter(s => 
+      s.name.toLowerCase().includes(q.toLowerCase())
+    );
+    setResults(filtered.map(s => ({ type: 'script', ...s })));
+  };
+
+  const handleSnippetsSearch = async (q) => {
+    if (!q.trim()) {
+      setResults(snippets.map(s => ({ type: 'snippet', ...s })));
+      return;
+    }
+    if (window.electronAPI) {
+      const foundSnippets = await window.electronAPI.getSnippets(q);
+      setResults(foundSnippets.map(s => ({ type: 'snippet', ...s })));
+    }
+  };
+
+  const handleQuicklinksSearch = async (q) => {
+    if (!q.trim()) {
+      setResults(quicklinks.map(l => ({ type: 'quicklink', ...l })));
+      return;
+    }
+    if (window.electronAPI) {
+      const foundLinks = await window.electronAPI.getQuicklinks(q);
+      setResults(foundLinks.map(l => ({ type: 'quicklink', ...l })));
+    }
   };
 
   const handleKeyDown = useCallback((e) => {
@@ -240,6 +391,55 @@ const App = () => {
         window.electronAPI?.hideWindow();
         break;
         
+      case 'window':
+        if (window.electronAPI) {
+          await window.electronAPI.focusWindow(item.id);
+          await window.electronAPI.hideWindow();
+        }
+        break;
+        
+      case 'file':
+        if (window.electronAPI) {
+          await window.electronAPI.openFile(item.path || item.file);
+          await window.electronAPI.hideWindow();
+        }
+        break;
+        
+      case 'emoji':
+        if (window.electronAPI) {
+          await window.electronAPI.writeClipboard(item.emoji || item.char);
+          await window.electronAPI.hideWindow();
+        }
+        break;
+        
+      case 'system_command':
+        if (window.electronAPI) {
+          await window.electronAPI.executeSystemCommand(item.command, item.value);
+          await window.electronAPI.hideWindow();
+        }
+        break;
+        
+      case 'script':
+        if (window.electronAPI) {
+          await window.electronAPI.executeScript(item.filename || item.name);
+          await window.electronAPI.hideWindow();
+        }
+        break;
+        
+      case 'snippet':
+        if (window.electronAPI) {
+          await window.electronAPI.writeClipboard(item.content);
+          await window.electronAPI.hideWindow();
+        }
+        break;
+        
+      case 'quicklink':
+        if (window.electronAPI) {
+          await window.electronAPI.openQuicklink(item.url);
+          await window.electronAPI.hideWindow();
+        }
+        break;
+        
       default:
         console.log('Unknown action type:', item.type);
     }
@@ -279,7 +479,14 @@ const App = () => {
       notes: '📝',
       calculator: '🔢',
       ai: '🤖',
-      web: '🌐'
+      web: '🌐',
+      windows: '🪟',
+      files: '📁',
+      emoji: '😀',
+      system: '⚙️',
+      scripts: '📜',
+      snippets: '✂️',
+      links: '🔗'
     };
     return icons[mode] || '🚀';
   };
@@ -291,7 +498,14 @@ const App = () => {
       notes: 'Notes',
       calculator: 'Calculator',
       ai: 'AI Chat',
-      web: 'Web Search'
+      web: 'Web Search',
+      windows: 'Windows',
+      files: 'Files',
+      emoji: 'Emoji Picker',
+      system: 'System Commands',
+      scripts: 'Scripts',
+      snippets: 'Snippets',
+      links: 'Quick Links'
     };
     return titles[mode] || 'Apps';
   };
@@ -333,7 +547,7 @@ const App = () => {
             ref={inputRef}
             type="text"
             className="search-input"
-            placeholder={`Search ${mode}... (try /ai, /notes, /clipboard, /web, or math)`}
+            placeholder={`Search ${mode}... (try /ai, /notes, /clipboard, /web, /windows, /files, /emoji, /system, /scripts, /snippets, /links)`}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -349,18 +563,11 @@ const App = () => {
                 onMouseEnter={() => setSelectedIndex(index)}
               >
                 <div className="result-icon">
-                  {item.icon || item.type === 'clipboard' ? '📋' : 
-                   item.type === 'note' ? '📝' :
-                   item.type === 'ai' ? '🤖' :
-                   item.type === 'calc' ? '🔢' :
-                   item.type === 'new_note' ? '➕' :
-                   item.type === 'web_result' ? '🌐' :
-                   item.type === 'open_url' ? '🔗' :
-                   item.type === 'email' ? '📧' : '📦'}
+                  {item.icon || getIconForType(item.type)}
                 </div>
                 <div className="result-content">
                   <span className="result-name">
-                    {item.name || item.title || item.content?.substring(0, 50) || 'Result'}
+                    {item.name || item.title || item.content?.substring(0, 50) || item.emoji || 'Result'}
                   </span>
                   {item.type === 'clipboard' && (
                     <span className="result-description">{item.content}</span>
@@ -376,6 +583,21 @@ const App = () => {
                   )}
                   {item.exec && (
                     <span className="result-description">{item.exec.split(' ')[0]}</span>
+                  )}
+                  {item.type === 'window' && item.appName && (
+                    <span className="result-description">{item.appName}</span>
+                  )}
+                  {item.type === 'file' && item.path && (
+                    <span className="result-description">{item.path}</span>
+                  )}
+                  {item.type === 'system_command' && item.description && (
+                    <span className="result-description">{item.description}</span>
+                  )}
+                  {item.type === 'snippet' && item.shortcut && (
+                    <span className="result-description">Shortcut: {item.shortcut}</span>
+                  )}
+                  {item.type === 'quicklink' && item.url && (
+                    <span className="result-description">{item.url}</span>
                   )}
                 </div>
               </li>
@@ -404,9 +626,45 @@ const App = () => {
         <span>/notes</span>
         <span className="separator">•</span>
         <span>/clipboard</span>
+        <span className="separator">•</span>
+        <span>/windows</span>
+        <span className="separator">•</span>
+        <span>/files</span>
+        <span className="separator">•</span>
+        <span>/emoji</span>
+        <span className="separator">•</span>
+        <span>/system</span>
+        <span className="separator">•</span>
+        <span>/scripts</span>
+        <span className="separator">•</span>
+        <span>/snippets</span>
+        <span className="separator">•</span>
+        <span>/links</span>
       </div>
     </div>
   );
+};
+
+const getIconForType = (type) => {
+  const icons = {
+    clipboard: '📋',
+    note: '📝',
+    new_note: '➕',
+    ai: '🤖',
+    calc: '🔢',
+    web_result: '🌐',
+    open_url: '🔗',
+    email: '📧',
+    window: '🪟',
+    file: '📁',
+    emoji: '😀',
+    system_command: '⚙️',
+    script: '📜',
+    snippet: '✂️',
+    quicklink: '🔗',
+    app: '🚀'
+  };
+  return icons[type] || '📦';
 };
 
 export default App;
