@@ -31,3 +31,4 @@ __pycache__/
 *.pyd
 .Python
 ```.next/
+.next/
