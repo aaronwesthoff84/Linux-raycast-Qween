@@ -6,7 +6,7 @@ class NotesService {
   constructor() {
     this.notes = [];
     this.dbPath = path.join(app.getPath('userData'), 'notes.json');
-    this.loadNotes();
+    this.initPromise = this.loadNotes();
   }
 
   async loadNotes() {
@@ -16,6 +16,7 @@ class NotesService {
     } catch (e) {
       this.notes = [];
     }
+    return this.notes;
   }
 
   async saveNotes() {
@@ -27,8 +28,9 @@ class NotesService {
   }
 
   async createNote(title, content) {
+    await this.initPromise;
     const note = {
-      id: Date.now().toString(),
+      id: Date.now().toString() + Math.random().toString(36).substring(2, 7),
       title,
       content,
       createdAt: Date.now(),
@@ -40,6 +42,7 @@ class NotesService {
   }
 
   async updateNote(id, updates) {
+    await this.initPromise;
     const index = this.notes.findIndex(n => n.id === id);
     if (index !== -1) {
       this.notes[index] = {
@@ -54,6 +57,7 @@ class NotesService {
   }
 
   async deleteNote(id) {
+    await this.initPromise;
     const index = this.notes.findIndex(n => n.id === id);
     if (index !== -1) {
       this.notes.splice(index, 1);
@@ -63,7 +67,8 @@ class NotesService {
     return false;
   }
 
-  getNotes(query = '') {
+  async getNotes(query = '') {
+    await this.initPromise;
     if (!query.trim()) {
       return this.notes;
     }
@@ -73,7 +78,8 @@ class NotesService {
     );
   }
 
-  getNote(id) {
+  async getNote(id) {
+    await this.initPromise;
     return this.notes.find(n => n.id === id);
   }
 }
