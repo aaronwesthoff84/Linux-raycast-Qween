@@ -1,8 +1,10 @@
 ```
+# Dependencies
+node_modules/
+
 # Logs and temp files
 *.log
 *.tmp
-*.swp
 
 # Environment
 .env
@@ -13,9 +15,93 @@
 .vscode/
 .idea/
 
-# Dependencies
-node_modules/
-```.next/
+# Build outputs
 dist/
 build/
+target/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-selfcheck.json
+.eggs/
+*.egg-info/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git/modules/
+*.sublime-workspace
+.pytest_cache/
+.hypothesis/
+.tox/
+.mypy_cache/
+.pyre/
+.pytype/
+cython_debug/
+
+# Node.js
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+node_modules/
+jspm_packages/
+web_modules/
+libpeerconnection.log
+.sass-cache/
+connect.lock
+vercel.json
+now.json
+.npm
+.yarn-integrity
+.yarn/
+.nyc_output
+coverage/
+.nyc_output/
+istanbul/
+.lintcache/
+.eslintcache
+.prettierignore
+.stylelintcache
+.commitlint.cache
 .next/
+.out/
+dist/
+build/
+.cache/
+.tmp/
+temp/
+
+# Electron
+electron/dist/
+electron/build/
+
+# Tests
+coverage/
+*.lcov
+*.profdata
+*.coverage
+coverage-final.json
+.nyc_output/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Icon?
+```

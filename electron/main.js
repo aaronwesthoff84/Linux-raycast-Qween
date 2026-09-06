@@ -5,6 +5,9 @@ const NotesService = require('./services/NotesService');
 const CalculatorService = require('./services/CalculatorService');
 const WebSearchService = require('./services/WebSearchService');
 const AIService = require('./services/AIService');
+const WindowManagerService = require('./services/WindowManagerService');
+const FileSearchService = require('./services/FileSearchService');
+const EmojiService = require('./services/EmojiService');
 
 let mainWindow;
 let clipboardService;
@@ -177,6 +180,65 @@ ipcMain.handle('ai-execute-command', async (event, command) => {
 
 ipcMain.handle('ai-summarize', async (event, text) => {
   return await AIService.summarize(text);
+});
+
+// Window Management handlers
+ipcMain.handle('get-windows', async (event, query) => {
+  const windows = await WindowManagerService.getAllWindows();
+  if (query) {
+    return WindowManagerService.searchWindows(query);
+  }
+  return windows;
+});
+
+ipcMain.handle('focus-window', async (event, windowId) => {
+  return await WindowManagerService.focusWindow(windowId);
+});
+
+ipcMain.handle('close-window', async (event, windowId) => {
+  return await WindowManagerService.closeWindow(windowId);
+});
+
+ipcMain.handle('tile-left', async (event, windowId) => {
+  return await WindowManagerService.tileLeft(windowId);
+});
+
+ipcMain.handle('tile-right', async (event, windowId) => {
+  return await WindowManagerService.tileRight(windowId);
+});
+
+ipcMain.handle('tile-maximized', async (event, windowId) => {
+  return await WindowManagerService.tileMaximized(windowId);
+});
+
+// File Search handlers
+ipcMain.handle('search-files', async (event, query, options) => {
+  return await FileSearchService.search(query, options);
+});
+
+ipcMain.handle('open-file', async (event, filePath) => {
+  return await FileSearchService.openFile(filePath);
+});
+
+ipcMain.handle('reveal-file', async (event, filePath) => {
+  return await FileSearchService.revealInFileManager(filePath);
+});
+
+ipcMain.handle('get-recent-files', async (event, limit) => {
+  return await FileSearchService.getRecentFiles(limit);
+});
+
+// Emoji handlers
+ipcMain.handle('search-emojis', async (event, query) => {
+  return EmojiService.search(query);
+});
+
+ipcMain.handle('get-all-emojis', () => {
+  return EmojiService.getAll();
+});
+
+ipcMain.handle('get-emoji-categories', () => {
+  return EmojiService.getCategories();
 });
 
 // Window control

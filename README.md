@@ -83,7 +83,10 @@ npm run dev:wayland
 
 ## Testing
 
-All 27 tests passing - verified functionality:
-- CalculatorService: 9/9 ✅
+All 43 tests passing - verified functionality:
 - AIService: 10/10 ✅
+- CalculatorService: 9/9 ✅
 - NotesService: 8/8 ✅
+- WindowManagerService: 4/4 ✅
+- FileSearchService: 6/6 ✅
+- EmojiService: 6/6 ✅
