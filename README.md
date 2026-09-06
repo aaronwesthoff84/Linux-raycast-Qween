@@ -2,6 +2,16 @@
 
 A full-stack Electron-based productivity launcher for Linux that replicates Raycast functionality.
 
+## 🎯 Wayland/CachyOS Support
+
+**Fully compatible with Wayland!** See [WAYLAND_COMPATIBILITY.md](./WAYLAND_COMPATIBILITY.md) for setup instructions.
+
+Quick start for CachyOS/Wayland:
+```bash
+npm install
+npm run start:wayland  # Optimized for Wayland compositors
+```
+
 ## Features
 
 ### ✅ Implemented Features
@@ -53,13 +63,27 @@ A full-stack Electron-based productivity launcher for Linux that replicates Rayc
 
 ```bash
 npm install
-npm run dev
-npm test
 ```
 
-## Testing Results
+## Running on CachyOS/Wayland
 
-All 27 tests passing:
+```bash
+# Standard mode (works on X11 and Wayland with XWayland)
+npm start
+
+# Native Wayland mode (recommended for CachyOS, KDE Plasma Wayland, etc.)
+npm run start:wayland
+
+# Development mode with auto-reload
+npm run dev
+
+# Development mode with native Wayland support
+npm run dev:wayland
+```
+
+## Testing
+
+All 27 tests passing - verified functionality:
 - CalculatorService: 9/9 ✅
 - AIService: 10/10 ✅
 - NotesService: 8/8 ✅

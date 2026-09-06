@@ -5,8 +5,10 @@
   "main": "electron/main.js",
   "scripts": {
     "start": "electron .",
+    "start:wayland": "electron . --enable-features=UseOzonePlatform --ozone-platform=wayland",
     "build": "electron-builder",
     "dev": "nodemon --watch electron --watch src --exec electron .",
+    "dev:wayland": "nodemon --watch electron --watch src --exec electron . --enable-features=UseOzonePlatform --ozone-platform=wayland",
     "test": "mocha tests/*.test.js"
   },
   "keywords": [
