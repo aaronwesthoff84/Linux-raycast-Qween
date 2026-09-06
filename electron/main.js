@@ -1,7 +1,14 @@
-const { app, BrowserWindow, globalShortcut, ipcMain } = require('electron');
+const { app, BrowserWindow, globalShortcut, ipcMain, clipboard } = require('electron');
 const path = require('path');
+const ClipboardService = require('./services/ClipboardService');
+const NotesService = require('./services/NotesService');
+const CalculatorService = require('./services/CalculatorService');
+const WebSearchService = require('./services/WebSearchService');
+const AIService = require('./services/AIService');
 
 let mainWindow;
+let clipboardService;
+let notesService;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -13,8 +20,8 @@ function createWindow() {
     skipTaskbar: true,
     show: false,
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
+      nodeIntegration: false,
+      contextIsolation: true,
       preload: path.join(__dirname, 'preload.js')
     }
   });
@@ -33,8 +40,12 @@ function createWindow() {
 
 app.whenReady().then(() => {
   createWindow();
+  
+  // Initialize services
+  clipboardService = new ClipboardService();
+  notesService = new NotesService();
 
-  // Register global shortcut (Cmd+Space or Alt+Space)
+  // Register global shortcut (Ctrl+Space or Cmd+Space)
   const ret = globalShortcut.register('CommandOrControl+Space', () => {
     if (mainWindow.isVisible()) {
       mainWindow.hide();
@@ -97,17 +108,82 @@ ipcMain.handle('launch-app', async (event, execCommand) => {
   });
 });
 
-ipcMain.handle('execute-command', async (event, command) => {
-  const { exec } = require('child_process');
-  return new Promise((resolve) => {
-    exec(command, (error, stdout, stderr) => {
-      resolve({
-        success: !error,
-        output: stdout,
-        error: stderr
-      });
-    });
-  });
+// Clipboard handlers
+ipcMain.handle('get-clipboard-history', async (event, limit) => {
+  return clipboardService.getHistory(limit);
+});
+
+ipcMain.handle('add-clipboard-item', async (event, item) => {
+  return await clipboardService.addItem(item);
+});
+
+ipcMain.handle('clear-clipboard', async () => {
+  await clipboardService.clearHistory();
+  return { success: true };
+});
+
+ipcMain.handle('delete-clipboard-item', async (event, index) => {
+  return await clipboardService.deleteItem(index);
+});
+
+ipcMain.handle('read-clipboard', () => {
+  return clipboard.readText();
+});
+
+ipcMain.handle('write-clipboard', (event, text) => {
+  clipboard.writeText(text);
+  return { success: true };
+});
+
+// Notes handlers
+ipcMain.handle('get-notes', async (event, query) => {
+  return notesService.getNotes(query);
+});
+
+ipcMain.handle('create-note', async (event, title, content) => {
+  return await notesService.createNote(title, content);
+});
+
+ipcMain.handle('update-note', async (event, id, updates) => {
+  return await notesService.updateNote(id, updates);
+});
+
+ipcMain.handle('delete-note', async (event, id) => {
+  return await notesService.deleteNote(id);
+});
+
+// Calculator handlers
+ipcMain.handle('calculate', async (event, expression) => {
+  return await CalculatorService.evaluate(expression);
+});
+
+// Web search handlers
+ipcMain.handle('web-search', async (event, query, engine) => {
+  return await WebSearchService.search(query, engine);
+});
+
+ipcMain.handle('get-search-suggestions', async (event, query) => {
+  return WebSearchService.getSuggestions(query);
+});
+
+// AI Chat handlers
+ipcMain.handle('ai-chat', async (event, prompt, history) => {
+  return await AIService.chat(prompt, history);
+});
+
+ipcMain.handle('ai-execute-command', async (event, command) => {
+  return await AIService.executeSystemCommand(command);
+});
+
+ipcMain.handle('ai-summarize', async (event, text) => {
+  return await AIService.summarize(text);
+});
+
+// Window control
+ipcMain.handle('hide-window', () => {
+  if (mainWindow) {
+    mainWindow.hide();
+  }
 });
 
 app.on('will-quit', () => {
